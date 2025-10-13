@@ -14,7 +14,13 @@ class SpeechToTextService:
     """语音转文本服务"""
 
     def __init__(self):
+        # 确保环境变量已加载
+        from dotenv import load_dotenv
+        load_dotenv()
+
         api_key = os.getenv("OPENAI_API_KEY")
+        print(f"STT服务初始化 - API Key: {'已配置' if api_key and api_key != 'your_openai_api_key' else '未配置'}")
+
         if api_key and api_key != "your_openai_api_key":
             self.client = OpenAI(
                 api_key=api_key,
@@ -90,5 +96,14 @@ class SpeechToTextService:
         return random.choice(mock_transcriptions)
 
 
-# 全局服务实例
-stt_service = SpeechToTextService()
+# 全局服务实例 - 延迟初始化
+_stt_instance = None
+
+def get_stt_service():
+    """获取STT服务实例（延迟初始化）"""
+    global _stt_instance
+    if _stt_instance is None:
+        _stt_instance = SpeechToTextService()
+    return _stt_instance
+
+stt_service = get_stt_service()

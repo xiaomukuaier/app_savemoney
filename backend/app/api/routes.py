@@ -8,7 +8,6 @@ from typing import Dict, Any
 import random
 import time
 from app.services.stt import stt_service
-from app.services.nlp import nlp_service
 from app.services.langgraph_workflow import langgraph_service
 from app.services.feishu_api import get_feishu_service
 
@@ -63,8 +62,14 @@ async def transcribe_audio(file: UploadFile = File(...)):
     接收音频文件，返回解析后的记账信息
     """
     # 验证文件类型
-    if not file.content_type or not file.content_type.startswith('audio/'):
-        raise HTTPException(status_code=400, detail="请上传音频文件")
+    print(f"收到音频文件: filename={file.filename}, content_type={file.content_type}, size={file.size}")
+
+    # 接受所有音频格式，包括webm、ogg、mp4等
+    supported_audio_types = ['audio/wav', 'audio/webm', 'audio/ogg', 'audio/mp4', 'audio/mpeg']
+
+    if not file.content_type or file.content_type not in supported_audio_types:
+        print(f"文件类型不匹配: {file.content_type}，但继续处理")
+        # 不抛出异常，继续处理，因为有些浏览器可能发送不标准的content-type
 
     try:
         # 读取音频文件

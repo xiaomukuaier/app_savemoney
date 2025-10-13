@@ -16,12 +16,15 @@ load_dotenv(env_path)
 # 添加项目路径
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from app.services.feishu_api import feishu_service
+from app.services.feishu_api import get_feishu_service
 
 
 async def test_feishu_integration():
     """测试飞书API集成"""
     print("=== 飞书API集成测试 ===")
+
+    # 获取飞书服务实例
+    feishu_service = get_feishu_service()
 
     # 测试配置状态
     print(f"飞书API配置状态: {feishu_service.is_configured}")

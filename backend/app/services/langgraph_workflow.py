@@ -114,37 +114,23 @@ class LangGraphWorkflowService:
         """提取基础信息节点"""
         raw_text = state["raw_text"]
 
-        if self.llm:
-            # 使用LLM提取基础信息
-            prompt = f"""
-            请从以下中文文本中提取记账信息：
+        try:
+            # 使用GPT解析服务进行智能解析
+            from app.services.gpt_parser import gpt_parser_service
 
-            文本："{raw_text}"
+            # 使用同步方法
+            extracted_data = gpt_parser_service.parse_expense_text_sync(raw_text)
 
-            请提取以下信息：
-            1. 金额（数字）
-            2. 分类（餐饮、交通、购物、娱乐、医疗、其他）
-            3. 描述（简洁描述消费内容）
-            4. 支付方式（微信支付、支付宝、现金、银行卡）
+            # 确保包含所有必需字段
+            required_fields = ['amount', 'category', 'description', 'payment_method', 'confidence']
+            for field in required_fields:
+                if field not in extracted_data:
+                    extracted_data[field] = self._get_default_value(field)
 
-            请以JSON格式返回，包含以下字段：
-            - amount: 金额
-            - category: 分类
-            - description: 描述
-            - payment_method: 支付方式
-            - confidence: 置信度（0-1之间）
-            """
-
-            try:
-                response = self.llm.invoke([HumanMessage(content=prompt)])
-                # 这里简化处理，实际应该解析LLM的JSON响应
-                extracted_data = self._parse_llm_response(response.content)
-            except Exception as e:
-                print(f"LLM提取失败，使用基础解析: {e}")
-                extracted_data = self._fallback_extraction(raw_text)
-        else:
-            # 没有LLM时使用基础解析
-            extracted_data = self._fallback_extraction(raw_text)
+        except Exception as e:
+            print(f"GPT解析失败，使用基础解析: {e}")
+            # 直接使用基础解析，避免循环调用
+            extracted_data = self._direct_fallback_extraction(raw_text)
 
         state["extracted_data"] = extracted_data
         return state
@@ -263,27 +249,80 @@ class LangGraphWorkflowService:
             # 解析失败时使用基础解析
             return self._fallback_extraction("")
 
-    def _fallback_extraction(self, text: str) -> Dict[str, Any]:
-        """基础解析回退"""
-        from app.services.nlp import nlp_service
+    def _get_default_value(self, field: str) -> Any:
+        """获取字段的默认值"""
         from datetime import datetime
 
-        # 使用现有的NLP服务进行解析
-        expense_data = nlp_service.parse_expense_text(text)
+        defaults = {
+            "amount": 0.0,
+            "category": "其他",
+            "subcategory": "其他",
+            "description": "日常消费",
+            "type": "expense",
+            "payment_method": "微信支付",
+            "date": datetime.now().strftime("%Y-%m-%d"),
+            "confidence": 0.5
+        }
+
+        return defaults.get(field, "")
+
+    def _direct_fallback_extraction(self, text: str) -> Dict[str, Any]:
+        """直接基础解析回退（避免循环调用）"""
+        from datetime import datetime
+        import re
+
+        # 直接使用基础解析，不调用GPT解析器
+        amount_match = re.search(r'(\d+(?:\.\d+)?)', text)
+        amount = float(amount_match.group(1)) if amount_match else 25.0
+
+        categories = {
+            "餐饮": ["吃", "饭", "餐", "午餐", "晚餐", "早饭", "午饭"],
+            "交通": ["打车", "公交", "地铁", "交通", "出行"],
+            "购物": ["买", "购物", "超市", "商场"],
+            "娱乐": ["电影", "娱乐", "游戏", "KTV"],
+            "生活": ["水电", "房租", "话费", "生活"]
+        }
+
+        category = "其他"
+        subcategory = "其他"
+
+        for cat, keywords in categories.items():
+            for keyword in keywords:
+                if keyword in text:
+                    category = cat
+                    subcategory = keyword
+                    break
+            if category != "其他":
+                break
 
         return {
-            "amount": expense_data.get("amount", 0),
-            "category": expense_data.get("category", "其他"),
-            "subcategory": expense_data.get("subcategory", "其他"),
-            "description": expense_data.get("description", "日常消费"),
-            "date": expense_data.get("date", datetime.now().strftime("%Y-%m-%d")),
-            "type": expense_data.get("type", "expense"),
-            "payment_method": expense_data.get("payment_method", "微信支付"),
-            "confidence": expense_data.get("confidence", 0.5),
-            "needs_confirmation": False,
-            "confirmation_questions": [],
+            "amount": amount,
+            "category": category,
+            "subcategory": subcategory,
+            "description": text,
+            "date": datetime.now().strftime("%Y-%m-%d"),
+            "type": "expense",
+            "payment_method": "微信支付",
+            "confidence": 0.3,
+            "needs_confirmation": True,
+            "confirmation_questions": ["请确认消费信息"],
             "raw_text": text
         }
+
+    def _fallback_extraction(self, text: str) -> Dict[str, Any]:
+        """基础解析回退"""
+        from datetime import datetime
+
+        # 使用GPT解析服务的模拟模式
+        from app.services.gpt_parser import gpt_parser_service
+
+        try:
+            # 即使GPT解析失败，也尝试使用模拟模式
+            extracted_data = gpt_parser_service.parse_expense_text_sync(text)
+            return extracted_data
+        except Exception:
+            # 如果连模拟模式都失败，使用最基础的解析
+            return self._direct_fallback_extraction(text)
 
     def _enhance_with_llm(self, data: Dict[str, Any], llm_response: str) -> Dict[str, Any]:
         """使用LLM响应增强数据"""
@@ -385,16 +424,22 @@ class LangGraphWorkflowService:
 
     def _get_keyword_based_suggestions(self, text: str) -> List[Dict[str, Any]]:
         """基于关键词的分类建议"""
-        from app.services.nlp import nlp_service
+        # 定义分类关键词
+        category_keywords = {
+            '餐饮': ['吃', '饭', '餐', '午餐', '晚餐', '早饭', '午饭', '餐厅', '外卖', '快餐', '小吃', '饮料', '咖啡', '茶'],
+            '交通': ['打车', '公交', '地铁', '交通', '出行', '车费', '加油', '停车', '出租车', '网约车'],
+            '购物': ['买', '购物', '超市', '商场', '衣服', '鞋', '包', '日用品', '电器', '手机', '电脑', '书'],
+            '娱乐': ['电影', '娱乐', '游戏', 'KTV', '旅游', '景点', '门票', '演出', '演唱会', '体育', '健身'],
+            '医疗': ['医院', '看病', '药品', '药', '检查', '治疗', '医生', '诊所', '医保']
+        }
 
-        # 使用NLP服务的关键词匹配
         categories = ['餐饮', '交通', '购物', '娱乐', '医疗']
         suggestions = []
 
         for category in categories:
             # 计算该分类的匹配分数
             score = 0
-            for keyword in nlp_service.category_keywords[category]:
+            for keyword in category_keywords[category]:
                 if keyword in text:
                     score += len(keyword) * 0.1
 

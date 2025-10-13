@@ -134,6 +134,7 @@ class FeishuAPIService:
         - 日期: 消费发生的日期，日期类型
         - 分类: 文本类型
         - 子分类: 文本类型
+        - 描述: 文本类型
         - 是否日常: 单选（是、否、待定）
         - 支付方式: 文本类型
         - 是否为必须开支: 单选（是、否、待定）
@@ -178,6 +179,7 @@ class FeishuAPIService:
             "日期": date_timestamp,
             "分类": category,
             "子分类": expense_data.get("subcategory", "其他"),
+            "描述": expense_data.get("description", ""),
             "是否日常": is_daily,
             "支付方式": expense_data.get("payment_method", "微信支付"),
             "是否为必须开支": is_necessary,

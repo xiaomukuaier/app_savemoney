@@ -46,7 +46,19 @@ const startRecording = async () => {
 
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-    mediaRecorder.value = new MediaRecorder(stream)
+
+    // 检查浏览器支持的音频格式
+    let mimeType = 'audio/webm'
+    if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+      mimeType = 'audio/webm;codecs=opus'
+    } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+      mimeType = 'audio/mp4'
+    } else if (MediaRecorder.isTypeSupported('audio/ogg')) {
+      mimeType = 'audio/ogg;codecs=opus'
+    }
+
+    console.log('使用音频格式:', mimeType)
+    mediaRecorder.value = new MediaRecorder(stream, { mimeType })
     audioChunks.value = []
 
     mediaRecorder.value.ondataavailable = (event) => {

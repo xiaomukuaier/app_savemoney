@@ -73,6 +73,30 @@
             />
           </el-select>
         </div>
+
+        <div class="detail-item">
+          <label>是否日常:</label>
+          <el-select v-model="localExpense.is_daily" placeholder="选择是否日常">
+            <el-option
+              v-for="option in dailyOptions"
+              :key="option"
+              :label="option"
+              :value="option"
+            />
+          </el-select>
+        </div>
+
+        <div class="detail-item">
+          <label>是否为必须开支:</label>
+          <el-select v-model="localExpense.is_necessary" placeholder="选择是否为必须开支">
+            <el-option
+              v-for="option in necessaryOptions"
+              :key="option"
+              :label="option"
+              :value="option"
+            />
+          </el-select>
+        </div>
       </div>
     </div>
 
@@ -98,7 +122,11 @@ const emit = defineEmits<{
   cancel: []
 }>()
 
-const localExpense = ref<Expense>({ ...props.expense })
+const localExpense = ref<Expense>({
+  ...props.expense,
+  is_daily: props.expense.is_daily || '待定',
+  is_necessary: props.expense.is_necessary || '待定'
+})
 
 // 分类数据
 const categories = ['餐饮', '交通', '购物', '娱乐', '医疗', '其他']
@@ -113,6 +141,8 @@ const subcategories = {
 }
 
 const paymentMethods = ['微信支付', '支付宝', '现金', '银行卡', '其他']
+const dailyOptions = ['是', '否', '待定']
+const necessaryOptions = ['是', '否', '待定']
 
 const getSubcategories = (category: string): string[] => {
   return subcategories[category as keyof typeof subcategories] || ['其他']
@@ -140,15 +170,23 @@ watch(
 
 <style scoped>
 .expense-card {
-  width: 400px;
-  max-width: 90vw;
+  width: 500px;
+  max-width: 95vw;
   margin-top: 2rem;
+  max-height: 80vh;
+  overflow-y: auto;
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  position: sticky;
+  top: 0;
+  background: white;
+  z-index: 10;
+  padding: 8px 0;
+  border-bottom: 1px solid #ebeef5;
 }
 
 .amount-section {
@@ -169,9 +207,10 @@ watch(
 }
 
 .detail-grid {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 1rem;
+  padding: 0.5rem 0;
 }
 
 .detail-item {
@@ -194,5 +233,23 @@ watch(
   display: flex;
   justify-content: flex-end;
   gap: 1rem;
+  position: sticky;
+  bottom: 0;
+  background: white;
+  padding: 12px 0;
+  border-top: 1px solid #ebeef5;
+}
+
+/* 响应式设计 */
+@media (max-width: 600px) {
+  .expense-card {
+    width: 100%;
+    max-width: 100vw;
+    margin: 1rem;
+  }
+
+  .detail-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>
