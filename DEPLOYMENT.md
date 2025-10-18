@@ -28,32 +28,55 @@ VITE_API_BASE_URL=后端服务URL（Zeabur会自动设置）
 
 ### 部署步骤
 
-#### 方法一：通过 Zeabur Dashboard
+#### 方法一：通过 Zeabur Dashboard（推荐）
 
-1. 登录 Zeabur Dashboard
-2. 点击 "Create Project"
-3. 选择 "Import from GitHub"
-4. 选择 `xiaomukuaier/app_savemoney` 仓库
-5. Zeabur 会自动检测 `zeabur.json` 配置文件
-6. 在环境变量设置中配置上述环境变量
-7. 点击部署
+1. **登录 Zeabur Dashboard**
+   - 访问 https://zeabur.com
+   - 使用 GitHub 账号登录
 
-#### 方法二：通过 Zeabur CLI
+2. **安装 GitHub App**
+   - 点击 "Create Project"
+   - 选择 "GitHub" 服务类型
+   - 点击 "Configure GitHub" 按钮
+   - 在 GitHub 授权页面安装 Zeabur App
+   - 选择个人账号或组织
 
-1. 安装 Zeabur CLI
-```bash
-npm install -g @zeabur/cli
-```
+3. **选择仓库**
+   - 在搜索框中输入 `xiaomukuaier/app_savemoney`
+   - 选择你的仓库
 
-2. 登录
-```bash
-zeabur login
-```
+4. **配置服务**
+   - Zeabur 会自动检测项目结构
+   - 会创建两个服务：`backend` 和 `frontend`
+   - 如果自动检测失败，可以手动配置
 
-3. 部署
-```bash
-zeabur deploy
-```
+5. **设置环境变量**
+   - 在服务设置中配置必需的环境变量
+   - 特别是后端服务的 API 密钥
+
+6. **部署**
+   - 点击部署按钮
+   - 等待构建完成
+
+#### 方法二：手动配置服务
+
+如果自动检测失败，可以手动创建服务：
+
+1. **创建后端服务**
+   - 类型：Backend
+   - 构建方式：Nixpacks
+   - 路径：`backend`
+   - 启动命令：`uvicorn app.main:app --host 0.0.0.0 --port 8000`
+
+2. **创建前端服务**
+   - 类型：Static
+   - 构建方式：Nixpacks
+   - 路径：`frontend`
+   - 输出目录：`dist`
+
+3. **配置路由**
+   - `/api/*` → 后端服务
+   - `/*` → 前端服务
 
 ### 项目结构说明
 
