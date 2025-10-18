@@ -1,0 +1,10 @@
+{
+  "type": "static",
+  "build": {
+    "command": "npm install && npm run build",
+    "output": "dist"
+  },
+  "env": {
+    "VITE_API_BASE_URL": "${BACKEND_URL}"
+  }
+}
