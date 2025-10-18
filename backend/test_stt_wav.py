@@ -27,7 +27,7 @@ async def test_stt_with_wav():
     stt_service = SpeechToTextService()
 
     # 检查WAV音频文件
-    audio_file_path = "data/test.wav"
+    audio_file_path = "../data/test.wav"
     if not os.path.exists(audio_file_path):
         print(f"错误: WAV音频文件不存在: {audio_file_path}")
         return

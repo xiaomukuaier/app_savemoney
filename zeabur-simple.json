@@ -46,10 +46,10 @@
     },
     {
       "name": "frontend",
-      "type": "backend",
+      "type": "static",
       "build": {
-        "type": "dockerfile",
-        "dockerfile": "frontend/Dockerfile"
+        "type": "nixpacks",
+        "path": "frontend"
       },
       "env": {
         "VITE_API_BASE_URL": {
@@ -57,12 +57,6 @@
           "service": "backend"
         }
       },
-      "ports": [
-        {
-          "port": 80,
-          "protocol": "http"
-        }
-      ],
       "routes": [
         {
           "path": "/*",
