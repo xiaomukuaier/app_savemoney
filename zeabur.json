@@ -1,0 +1,72 @@
+{
+  "name": "savemoney-app",
+  "services": [
+    {
+      "name": "backend",
+      "type": "backend",
+      "build": {
+        "type": "dockerfile",
+        "dockerfile": "backend/Dockerfile"
+      },
+      "env": {
+        "FEISHU_APP_ID": {
+          "type": "secret",
+          "value": "${FEISHU_APP_ID}"
+        },
+        "FEISHU_APP_SECRET": {
+          "type": "secret",
+          "value": "${FEISHU_APP_SECRET}"
+        },
+        "FEISHU_TABLE_ID": {
+          "type": "secret",
+          "value": "${FEISHU_TABLE_ID}"
+        },
+        "OPENAI_API_KEY": {
+          "type": "secret",
+          "value": "${OPENAI_API_KEY}"
+        },
+        "LANGCHAIN_API_KEY": {
+          "type": "secret",
+          "value": "${LANGCHAIN_API_KEY}"
+        },
+        "NODE_ENV": "production",
+        "PYTHONPATH": "/app/backend"
+      },
+      "ports": [
+        {
+          "port": 8000,
+          "protocol": "http"
+        }
+      ],
+      "healthCheck": {
+        "path": "/health",
+        "port": 8000,
+        "interval": 30
+      }
+    },
+    {
+      "name": "frontend",
+      "type": "static",
+      "build": {
+        "type": "dockerfile",
+        "dockerfile": "frontend/Dockerfile"
+      },
+      "env": {
+        "VITE_API_BASE_URL": {
+          "type": "url",
+          "service": "backend"
+        }
+      },
+      "routes": [
+        {
+          "path": "/*",
+          "service": "frontend"
+        },
+        {
+          "path": "/api/*",
+          "service": "backend"
+        }
+      ]
+    }
+  ]
+}
