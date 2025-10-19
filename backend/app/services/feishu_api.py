@@ -39,11 +39,22 @@ class FeishuAPIService:
         self.app_token = os.getenv("FEISHU_APP_TOKEN")  # 多维表格的app_token
         self.space_id = os.getenv("FEISHU_SPACE_ID")  # 知识空间ID（可选）
 
-        # 检查配置是否完整
-        self.is_configured = all([self.app_id, self.app_secret, self.app_token])
+        # 调试日志：显示环境变量值
+        print(f"飞书API配置检查:")
+        print(f"  FEISHU_APP_ID: {'已设置' if self.app_id else '未设置'}")
+        print(f"  FEISHU_APP_SECRET: {'已设置' if self.app_secret else '未设置'}")
+        print(f"  FEISHU_TABLE_ID: {'已设置' if self.table_id else '未设置'}")
+        print(f"  FEISHU_APP_TOKEN: {'已设置' if self.app_token else '未设置'}")
+
+        # 检查配置是否完整 - 需要 app_id, app_secret, 和至少一个token
+        required_configs = [self.app_id, self.app_secret]
+        token_configs = [self.app_token, self.table_id, self.node_token]
+
+        self.is_configured = all(required_configs) and any(token_configs)
 
         if not self.is_configured:
             print("警告: 飞书API配置不完整，使用模拟模式")
+            print(f"  缺少的配置: app_id={bool(self.app_id)}, app_secret={bool(self.app_secret)}, token={any(token_configs)}")
             return
 
         # 初始化飞书客户端
