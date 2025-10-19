@@ -29,6 +29,10 @@ class SaveMoneyApp:
     async def process_audio(self, audio_file):
         """处理音频文件并返回结构化记账信息"""
         try:
+            # 检查音频文件是否存在
+            if not audio_file:
+                return "❌ 请先录制或上传音频文件", "", "", "", "", "", "", ""
+
             # 语音转文本
             print(f"处理音频文件: {audio_file}")
             # 读取音频文件
@@ -38,14 +42,14 @@ class SaveMoneyApp:
             text = await stt_service.transcribe_audio(audio_data)
 
             if not text:
-                return "❌ 语音识别失败，请重试", "", "", "", "", "", "", "", ""
+                return "❌ 语音识别失败，请重试", "", "", "", "", "", "", ""
 
             # GPT解析文本
             print(f"解析文本: {text}")
             parsed_data = await gpt_parser.parse_expense_text(text)
 
             if not parsed_data:
-                return "❌ 解析失败，请重试", "", "", "", "", "", "", "", ""
+                return "❌ 解析失败，请重试", "", "", "", "", "", "", ""
 
             # 保存当前数据用于后续编辑
             self.current_data = parsed_data
@@ -63,7 +67,7 @@ class SaveMoneyApp:
             )
 
         except Exception as e:
-            return f"❌ 处理失败: {str(e)}", "", "", "", "", "", "", "", ""
+            return f"❌ 处理失败: {str(e)}", "", "", "", "", "", "", ""
 
     def save_to_feishu(self,
                       original_text,

@@ -14,8 +14,18 @@ import lark_oapi.api.auth.v3 as auth_v3
 import lark_oapi.api.wiki.v2 as wiki_v2
 
 # 加载环境变量
-env_path = Path(__file__).parent.parent.parent.parent / ".env"
-load_dotenv(env_path)
+# 在Zeabur部署时，环境变量通过平台设置，不需要从.env文件加载
+# 保留dotenv导入以支持本地开发
+from dotenv import load_dotenv
+import os
+
+# 尝试从.env文件加载（仅用于本地开发）
+try:
+    env_path = Path(__file__).parent.parent.parent.parent / ".env"
+    if env_path.exists():
+        load_dotenv(env_path)
+except:
+    pass  # 如果.env文件不存在，继续使用系统环境变量
 
 
 class FeishuAPIService:
