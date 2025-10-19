@@ -24,4 +24,4 @@ USER appuser
 EXPOSE 7860
 
 # 启动命令
-CMD ["python", "gradio_app.py"]
+CMD ["python", "gradio_app_enhanced.py"]

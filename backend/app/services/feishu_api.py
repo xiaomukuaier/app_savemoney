@@ -144,20 +144,26 @@ class FeishuAPIService:
         import random
         record_id = int(time.time() * 1000) + random.randint(1000, 9999)
 
-        # 确定是否日常（基于分类判断）
+        # 使用用户的选择，如果没有提供则基于分类判断
         category = expense_data.get("category", "其他")
-        is_daily = "待定"
-        if category in ["餐饮", "交通", "日常用品"]:
-            is_daily = "是"
-        elif category in ["娱乐", "购物", "旅游"]:
-            is_daily = "否"
 
-        # 确定是否为必须开支（基于分类判断）
-        is_necessary = "待定"
-        if category in ["餐饮", "交通", "医疗"]:
-            is_necessary = "是"
-        elif category in ["娱乐", "购物", "旅游"]:
-            is_necessary = "否"
+        # 是否日常 - 优先使用用户选择
+        is_daily = expense_data.get("is_daily", "待定")
+        if is_daily == "待定":
+            # 如果没有用户选择，基于分类判断
+            if category in ["餐饮", "交通", "日常用品"]:
+                is_daily = "是"
+            elif category in ["娱乐", "购物", "旅游"]:
+                is_daily = "否"
+
+        # 是否为必须开支 - 优先使用用户选择
+        is_necessary = expense_data.get("is_necessary", "待定")
+        if is_necessary == "待定":
+            # 如果没有用户选择，基于分类判断
+            if category in ["餐饮", "交通", "医疗"]:
+                is_necessary = "是"
+            elif category in ["娱乐", "购物", "旅游"]:
+                is_necessary = "否"
 
         # 处理日期格式 - 飞书多维表格日期字段需要毫秒时间戳
         date_str = expense_data.get("date", "")

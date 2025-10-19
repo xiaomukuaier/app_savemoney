@@ -14,30 +14,38 @@ from datetime import datetime
 # 导入现有服务
 from backend.app.services.stt import SpeechToTextService
 from backend.app.services.gpt_parser import GPTParserService
-from backend.app.services.feishu_api import FeishuAPI
+from backend.app.services.feishu_api import FeishuAPIService
 
 # 初始化服务
 stt_service = SpeechToTextService()
 gpt_parser = GPTParserService()
-feishu_api = FeishuAPI()
+feishu_api = FeishuAPIService()
 
 class SaveMoneyApp:
     def __init__(self):
         self.history = []
 
-    def process_audio(self, audio_file):
+    async def process_audio(self, audio_file):
         """处理音频文件并返回结构化记账信息"""
         try:
             # 语音转文本
             print(f"处理音频文件: {audio_file}")
-            text = stt_service.transcribe_audio(audio_file)
+            # 读取音频文件
+            with open(audio_file, 'rb') as f:
+                audio_data = f.read()
+
+            # 添加调试信息
+            print(f"音频数据大小: {len(audio_data)} bytes")
+            print(f"STT客户端状态: {'已初始化' if stt_service.client else '未初始化'}")
+
+            text = await stt_service.transcribe_audio(audio_data)
 
             if not text:
                 return "❌ 语音识别失败，请重试", "", ""
 
             # GPT解析文本
             print(f"解析文本: {text}")
-            parsed_data = gpt_parser.parse_expense_text(text)
+            parsed_data = await gpt_parser.parse_expense_text(text)
 
             if not parsed_data:
                 return "❌ 解析失败，请重试", "", ""
@@ -68,9 +76,9 @@ class SaveMoneyApp:
             data = json.loads(parsed_json)
 
             # 保存到飞书
-            result = feishu_api.create_record(data)
+            success = feishu_api.save_expense_to_table(data)
 
-            if result.get('success'):
+            if success:
                 # 添加到历史记录
                 self.history.append({
                     'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
@@ -79,7 +87,7 @@ class SaveMoneyApp:
                 })
                 return "✅ 保存成功！"
             else:
-                return f"❌ 保存失败: {result.get('message', '未知错误')}"
+                return "❌ 保存失败: 请检查飞书API配置"
 
         except Exception as e:
             return f"❌ 保存失败: {str(e)}"
