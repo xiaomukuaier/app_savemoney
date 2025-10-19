@@ -1,0 +1,28 @@
+{
+  "name": "savemoney-gradio-app",
+  "services": [
+    {
+      "name": "savemoney",
+      "type": "backend",
+      "source": {
+        "type": "git",
+        "path": "."
+      },
+      "build": {
+        "type": "dockerfile"
+      },
+      "env": {
+        "FEISHU_APP_ID": "${FEISHU_APP_ID}",
+        "FEISHU_APP_SECRET": "${FEISHU_APP_SECRET}",
+        "FEISHU_TABLE_ID": "${FEISHU_TABLE_ID}",
+        "OPENAI_API_KEY": "${OPENAI_API_KEY}"
+      }
+    }
+  ],
+  "ports": [
+    {
+      "port": 7860,
+      "protocol": "http"
+    }
+  ]
+}
