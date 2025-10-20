@@ -17,6 +17,7 @@ dependencies = [
     "requests>=2.31.0",
     "lark-oapi>=1.4.23",
     "gradio>=4.0.0",
+    "pydub>=0.25.1",
 ]
 
 [project.optional-dependencies]

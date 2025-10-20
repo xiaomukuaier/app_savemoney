@@ -8,6 +8,8 @@ import tempfile
 from typing import Optional
 import httpx
 from openai import OpenAI
+from pydub import AudioSegment
+from pydub.utils import mediainfo
 
 
 class SpeechToTextService:
@@ -45,6 +47,15 @@ class SpeechToTextService:
             print("警告: OpenAI客户端未初始化，使用模拟模式")
             return self._generate_mock_transcription()
 
+        # 检查音频时长，如果超过30秒则截断
+        duration = self._get_audio_duration(audio_data)
+        print(f"音频时长: {duration:.1f}秒")
+
+        if duration > 30:
+            print("音频超过30秒，进行截断处理")
+            audio_data = self._truncate_audio_to_30s(audio_data)
+            print("音频截断完成")
+
         # 创建临时文件
         with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temp_file:
             temp_file.write(audio_data)
@@ -75,6 +86,65 @@ class SpeechToTextService:
                 os.unlink(temp_path)
             except:
                 pass
+
+    def _get_audio_duration(self, audio_data: bytes) -> float:
+        """获取音频时长（秒）"""
+        try:
+            # 创建临时文件
+            with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temp_file:
+                temp_file.write(audio_data)
+                temp_path = temp_file.name
+
+            # 使用pydub获取音频时长
+            audio = AudioSegment.from_file(temp_path)
+            duration_seconds = len(audio) / 1000.0  # 转换为秒
+
+            # 清理临时文件
+            os.unlink(temp_path)
+
+            return duration_seconds
+        except Exception as e:
+            print(f"获取音频时长失败: {e}")
+            return 0.0
+
+    def _truncate_audio_to_30s(self, audio_data: bytes) -> bytes:
+        """将音频截断为30秒"""
+        try:
+            # 创建临时文件
+            with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temp_file:
+                temp_file.write(audio_data)
+                temp_path = temp_file.name
+
+            # 加载音频
+            audio = AudioSegment.from_file(temp_path)
+
+            # 截取前30秒
+            max_duration = 30 * 1000  # 30秒，单位毫秒
+            if len(audio) > max_duration:
+                print(f"音频超过30秒 ({len(audio)/1000:.1f}s)，截取前30秒")
+                truncated_audio = audio[:max_duration]
+
+                # 保存截断后的音频
+                truncated_path = temp_path + "_truncated.wav"
+                truncated_audio.export(truncated_path, format="wav")
+
+                # 读取截断后的音频数据
+                with open(truncated_path, "rb") as f:
+                    truncated_data = f.read()
+
+                # 清理临时文件
+                os.unlink(temp_path)
+                os.unlink(truncated_path)
+
+                return truncated_data
+            else:
+                # 音频不超过30秒，直接返回原数据
+                os.unlink(temp_path)
+                return audio_data
+
+        except Exception as e:
+            print(f"音频截断失败: {e}")
+            return audio_data  # 如果截断失败，返回原数据
 
     def _generate_mock_transcription(self) -> str:
         """生成模拟的语音识别结果"""

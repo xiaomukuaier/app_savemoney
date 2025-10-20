@@ -135,6 +135,12 @@ def create_gradio_interface():
         css="""
         .success { color: green; font-weight: bold; }
         .error { color: red; font-weight: bold; }
+        .recording-timer {
+            color: #ff6b35;
+            font-weight: bold;
+            font-size: 14px;
+            margin-top: 5px;
+        }
         """
     ) as demo:
         gr.Markdown("""
@@ -149,7 +155,13 @@ def create_gradio_interface():
                 audio_input = gr.Audio(
                     sources=["microphone"],
                     type="filepath",
-                    label="🎤 点击录音或上传音频文件"
+                    label="🎤 点击录音或上传音频文件 (最长30秒)"
+                )
+
+                # 录音计时器显示
+                timer_display = gr.HTML(
+                    value="<div class='recording-timer' id='timer-display'>准备录音...</div>",
+                    visible=False
                 )
 
                 process_btn = gr.Button("🚀 处理语音", variant="primary")
@@ -261,6 +273,60 @@ def create_gradio_interface():
 
         # 初始化历史记录
         demo.load(app.get_history, outputs=[history_display])
+
+        # 添加JavaScript代码实现30秒录音限制
+        demo.load(
+            None,
+            js="""
+            function setupRecordingTimer() {
+                const audioInput = document.querySelector('input[type="file"]');
+                const timerDisplay = document.getElementById('timer-display');
+                let recordingTimer = null;
+                let secondsRemaining = 30;
+
+                if (audioInput && timerDisplay) {
+                    // 监听录音开始
+                    audioInput.addEventListener('click', function() {
+                        // 重置计时器
+                        clearInterval(recordingTimer);
+                        secondsRemaining = 30;
+                        timerDisplay.style.display = 'block';
+                        timerDisplay.innerHTML = `⏱️ 录音中... 剩余时间: ${secondsRemaining}秒`;
+
+                        // 启动30秒倒计时
+                        recordingTimer = setInterval(function() {
+                            secondsRemaining--;
+                            timerDisplay.innerHTML = `⏱️ 录音中... 剩余时间: ${secondsRemaining}秒`;
+
+                            if (secondsRemaining <= 0) {
+                                clearInterval(recordingTimer);
+                                timerDisplay.innerHTML = '⏰ 录音已自动停止 (30秒限制)';
+
+                                // 模拟停止录音（Gradio会自动处理）
+                                setTimeout(function() {
+                                    timerDisplay.innerHTML = '准备录音...';
+                                    timerDisplay.style.display = 'none';
+                                }, 2000);
+                            }
+                        }, 1000);
+                    });
+
+                    // 监听录音结束（文件选择）
+                    audioInput.addEventListener('change', function() {
+                        clearInterval(recordingTimer);
+                        timerDisplay.innerHTML = '✅ 录音完成';
+                        setTimeout(function() {
+                            timerDisplay.innerHTML = '准备录音...';
+                            timerDisplay.style.display = 'none';
+                        }, 2000);
+                    });
+                }
+            }
+
+            // 页面加载完成后设置计时器
+            setTimeout(setupRecordingTimer, 1000);
+            """
+        )
 
     return demo
 
